@@ -1,0 +1,50 @@
+{
+  "name": "@rampagecorp/knight",
+  "version": "1.0.0",
+  "description": "Knight CLI",
+  "main": "dist/index.js",
+  "bin": {
+    "knight": "./knightcli.cmd",
+    "@rampagecorp/knight": "./knightcli.cmd"
+  },
+  "type": "module",
+  "scripts": {
+    "prebuild": "node -p \"'export const version = ' + JSON.stringify(require('./package.json').version) + ';'\" > src/version.ts",
+    "build": "npm run prebuild && npx tsc",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "knight",
+    "cli",
+    "roblox",
+    "framework",
+    "installer"
+  ],
+  "author": "RAMPAGE Interactive",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.2",
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "config": "^3.3.12",
+    "express": "^4.19.2",
+    "figlet": "^1.7.0",
+    "fs": "^0.0.1-security",
+    "open": "^10.1.0",
+    "path": "^0.12.7",
+    "progress": "^2.0.3",
+    "unzipper": "^0.12.2"
+  },
+  "devDependencies": {
+    "@types/chalk": "^2.2.0",
+    "@types/config": "^3.3.4",
+    "@types/dotenv": "^8.2.0",
+    "@types/express": "^4.17.21",
+    "@types/figlet": "^1.5.8",
+    "@types/node": "^20.14.12",
+    "@types/progress": "^2.0.7",
+    "@types/unzipper": "^0.10.9",
+    "typescript": "^5.5.4"
+  }
+}
