@@ -7,40 +7,56 @@ import figlet from "figlet";
 import chalk from 'chalk';
 import path from 'path';
 import fs from 'fs';
-import { version as kpm_current_version } from './version.js';
-import { GITHUB_API } from './config.js';
+import { version as current_version } from './version.js';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json');
 
-console.log(figlet.textSync("Knight CLI client"));
+console.log(figlet.textSync("Knight CLI"));
 console.log("Copyright (c) 2025 RAMPAGE Interactive.");
 console.log("Written by vq9o and Contributor(s).");
+console.log(`Version: ${current_version}`);
 
 const program = new Command();
 
 program
-    .version(kpm_current_version)
+    .version(current_version)
     .description('Knight CLI')
 
 program
     .command('init [version]')
     .description('Automatically Install the Knight Framework and Rojo init.')
-    .action(async (pkg, version = 'latest') => {
+    .action(async (version = 'latest') => {
         try {
             let tagVersion = version;
 
             // Fetch latest version if not specified
             if (version === 'latest') {
                 console.log(chalk.blue('Fetching latest version...'));
-                const response = await fetch(GITHUB_API);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const response = await fetch('https://api.github.com/repos/RAMPAGELLC/knight/releases/latest');
+
+                if (!response.ok) {
+                    throw new Error(`GitHub API error: ${response.status}`);
+                }
+
                 const data = await response.json();
+                if (!data.tag_name) {
+                    throw new Error('No release version found');
+                }
+
                 tagVersion = data.tag_name;
+                console.log(chalk.blue(`Latest version found: ${tagVersion}`));
             }
 
-            console.log(chalk.blue(`Initializing Knight Framework (${tagVersion})...`));
+            tagVersion = String(tagVersion).trim();
+
+            if (!tagVersion) {
+                console.log(chalk.red('Invalid version specified.'));
+                return;
+            }
+
+            console.log(chalk.blue(`Preparing download...`));
 
             // Get current directory
             const currentDir = process.cwd();
@@ -51,7 +67,7 @@ program
 
             // Download the specified version
             const downloadUrl = `https://github.com/RAMPAGELLC/knight/archive/refs/tags/${tagVersion}.zip`;
-            console.log(chalk.blue(`Downloading Knight Framework v${tagVersion}...`));
+            console.log(chalk.blue(`Downloading Knight Framework ${tagVersion}...`));
 
             const response = await fetch(downloadUrl);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -62,10 +78,35 @@ program
 
             console.log(chalk.blue('Extracting files...'));
 
+            // Extract to temp directory first
+            const extractPath = path.join(tempDir, 'extract');
             await import('unzipper').then(({ Open }) =>
-                Open.file(zipPath).then(d => d.extract({ path: currentDir }))
+                Open.file(zipPath).then(d => d.extract({ path: extractPath }))
             );
 
+            // Find the extracted directory (should be knight-{version})
+            const extractedDirs = fs.readdirSync(extractPath);
+            const knightDir = extractedDirs.find(dir => dir.startsWith('knight-'));
+
+            if (!knightDir) {
+                throw new Error('Could not find Knight Framework directory in zip');
+            }
+
+            // Copy contents from extracted directory to current directory
+            const sourcePath = path.join(extractPath, knightDir);
+            const files = fs.readdirSync(sourcePath);
+
+            for (const file of files) {
+                const src = path.join(sourcePath, file);
+                const dest = path.join(currentDir, file);
+
+                if (fs.lstatSync(src).isDirectory()) {
+                    fs.cpSync(src, dest, { recursive: true });
+                } else {
+                    fs.copyFileSync(src, dest);
+                }
+            }
+            
             const configData = {
                 version: tagVersion,
                 installedAt: new Date().toISOString(),
@@ -148,7 +189,7 @@ program
             console.log(chalk.blue(`Current version: ${currentVersion}`));
 
             // Fetch latest version from GitHub
-            const response = await fetch(GITHUB_API);
+            const response = await fetch('https://api.github.com/repos/RAMPAGELLC/knight/releases/latest');
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const data = await response.json();
             const latestVersion = data.tag_name;
