@@ -92,6 +92,15 @@ program
                 throw new Error('Could not find Knight Framework directory in zip');
             }
 
+            // Remove un-wanted files and directories
+            const unwantedFiles = ['releases', '.git', '.github', 'LICENSE', 'README.md', 'CHANGES.md'];
+
+            for (const file of unwantedFiles) {
+                const filePath = path.join(extractPath, knightDir, file);
+
+                if (fs.existsSync(filePath)) fs.rmSync(filePath, { recursive: true, force: true });
+            }
+
             // Copy contents from extracted directory to current directory
             const sourcePath = path.join(extractPath, knightDir);
             const files = fs.readdirSync(sourcePath);
