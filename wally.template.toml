@@ -1,0 +1,8 @@
+[package]
+name = "metatablegames/newproject"
+description = "A newly created project with Knight CLI."
+version = "1.0.0"
+
+realm = "shared"
+
+[dependencies]
